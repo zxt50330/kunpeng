@@ -1,14 +1,20 @@
 from django.db import models, transaction
 from django.db.models import F
+from products.models import Sku
 
 
 class Inventory(models.Model):
-    sku = models.CharField(max_length=100)
-    asin = models.CharField(max_length=100)
-    name = models.CharField(max_length=200)
+    """
+    1.2 一箱 6条
+    2cm 4条
+    68*0.8 12条
+    跪垫 25条
+    """
+    sku = models.OneToOneField(Sku, on_delete=models.PROTECT)
     quantity = models.IntegerField(default=0)
-    updated_at = models.DateTimeField(auto_now=True)
-    notes = models.TextField(blank=True)
+    location = models.CharField(max_length=100, null=True)  # 海外仓 亚马逊等
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+    notes = models.TextField(null=True)
 
 
 class Adjustment(models.Model):

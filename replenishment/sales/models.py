@@ -1,6 +1,10 @@
 import csv
+from datetime import date, timedelta
 
 from django.db import models, transaction
+from django.db.models import Sum, Count
+from django.db.models.functions import Round, TruncMonth, TruncDay
+from django.utils.timezone import now
 
 
 # Create your models here.
@@ -88,3 +92,33 @@ class AmazonOrder(models.Model):
                 )
                 print(order)
                 order.save()
+
+
+class DailySales(models.Model):
+    """
+    CREATE VIEW sales_daily_quantity AS
+    SELECT date_trunc('day', purchase_date AT TIME ZONE 'UTC') AS date,
+           sku,
+           SUM(quantity) AS total_quantity
+    FROM sales_amazonorder
+    GROUP BY date, sku;
+    CREATE VIEW sales_daily_quantity_30avg AS
+    WITH latest_date AS (
+      SELECT MAX(date) AS latest_date FROM sales_daily_quantity
+    )
+    SELECT sku,
+           ROUND(sum(total_quantity)/30, 2) AS daily_average
+    FROM sales_daily_quantity
+    WHERE date >= (SELECT latest_date - INTERVAL '29 days' FROM latest_date)
+    GROUP BY sku;
+
+    """
+    sku = models.CharField(primary_key=True, max_length=100)
+    daily_average = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'sales_daily_quantity_30avg'
+
+    def __str__(self):
+        return f'{self.sku}: {self.daily_average} units'
